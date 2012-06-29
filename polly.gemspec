@@ -17,6 +17,4 @@ Gem::Specification.new do |gem|
   gem.name          = "polly"
   gem.require_paths = ["lib"]
   gem.version       = Polly::VERSION
-
-  gem.add_dependency('symbolic')
 end

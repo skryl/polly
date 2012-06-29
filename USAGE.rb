@@ -1,6 +1,6 @@
 require 'polly'
 
-class ApprovalCalcVersion1 < Polly::Calculation
+Polly::Calculation.new do
   version 1
 
   # constants
@@ -30,12 +30,12 @@ end
 
 # Usage
 
-a = ApprovalCalcVersion1.new(loan_app, :persist => true)
-simple = a.simplify
-amount = a.result
+# a = ApprovalCalcVersion1.new(loan_app, :persist => true)
+# simple = a.simplify
+# amount = a.result
 
 
 # Initializer
 
-Polly.persist_equation_results = true
-Polly.persistance_class(Calculation)
+# Polly.persist_equation_results = true
+# Polly.persistance_class(Calculation)
