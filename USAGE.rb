@@ -1,6 +1,7 @@
 require 'polly'
 
 Polly::Calculation.new do
+  name :auto_approval
   version 1
 
   # constants
@@ -25,7 +26,7 @@ Polly::Calculation.new do
   eq :net_asset_value, kbb_auction_good
   eq :asset_cap, net_asset_value * l2v_cap
 
-  eq :approval_amount, min(credit_cap, asset_cap)
+  eq :approval_amount, minimum(credit_cap, asset_cap)
 end
 
 # Usage

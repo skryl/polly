@@ -15,7 +15,7 @@ class Polly::Calculation
   end
 
   def clean_env
-    @env.select { |name, expr| expr.is_a?(Sexpr) }
+    Context[@env.select { |name, expr| expr.is_a?(Sexpr) }]
   end
 
   def atomic_variables
@@ -40,8 +40,9 @@ class Polly::Calculation
     end
   end
 
-  def print(opts = {})
-    Context[clean_env].print(opts)
-  end
+  def print; puts to_s end
+  def to_s; clean_env.to_s end
+  def inspect; env.inspect end
+  def pretty_inspect; env.pretty_inspect end
 
 end

@@ -1,6 +1,7 @@
 require 'polly/version'
 require 'polly/extensions/object'
 require 'polly/extensions/array'
+require 'polly/extensions/numeric'
 
 module Polly; end
 

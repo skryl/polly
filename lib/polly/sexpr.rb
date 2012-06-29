@@ -1,8 +1,13 @@
 class Polly::Sexpr
   include Polly::Common
 
-  attr_reader :env, :name, :sexpr
-  protected :sexpr
+  # instance accessors
+  attr_reader :env, :name, :sexpr, :dirty
+  protected :sexpr, :dirty
+
+  # class accessors
+  meta_eval { attr_accessor :verbose, :symbolic}
+  meta_eval { protected :new }
 
   def self.build(val, env, opts = {})
     return val if val.is_a?(Sexpr)
@@ -13,7 +18,7 @@ class Polly::Sexpr
         val.map!.with_index do |arg, i| 
           (arg.is_a?(Sexpr) || i == 0) ? arg : Sexpr.build(arg, env)
         end
-      when Symbol, Numeric
+      when *ATOMIC_TYPES
         Array(val)
       when NilClass
         UNDEFINED
@@ -32,88 +37,115 @@ class Polly::Sexpr
     @sexpr[0]
   end
 
+  def args
+    @sexpr.cdr
+  end
+
   def replace(val)
+    @dirty = true
     @sexpr = self.class.build(val, self.env).sexpr
   end
 
-  def value(opts = {})
-    atomic? ? @sexpr.first : (self.defined? && self.send(:eval, opts))
-  end
-
-  def defined?
-    if atomic?
-      @sexpr != UNDEFINED
-    else
-      sexpr.cdr.all? { |s| s.defined? }
-    end
-  end
-
-  def undefined_variables
-    if atomic? && !self.defined?
-      [@name]
-    else
-      sexpr.cdr.inject([]) { |a, s| a << s.undefined_variables }.flatten
-    end
+  def value(cache = true)
+    @dirty = false
+    atomic? ? @sexpr.first : (self.defined? && self.send(:eval) || nil)
   end
 
   def atomic?
-    @sexpr.size == 1 && ((@sexpr.first.is_a? Symbol) || (@sexpr.first.is_a? Numeric))
+    @sexpr.size == 1 && valid_type?(@sexpr.first)
   end
 
-  def inspect
-    @sexpr.inspect
-  end
+  def defined?; !undefined? end
+  def undefined?; deep_any? { |s| s.sexpr == UNDEFINED } end
+  def undefined_variables; deep_select { |s| s.undefined? } end
 
-  def print(opts = {})
-    if atomic?
-      (opts[:symbolic] ? (name || value) : value).inspect
-    elsif BINARY_OPS.include?(op)
-      "(#{@sexpr[1].print(opts)} #{sexpr[0]} #{sexpr[2].print(opts)})" 
-    elsif UNARY_OPS.include?(op)
-      "#{op}(#{@sexpr[1].print(opts)})" 
-    else
-      "#{op}(#{@sexpr.cdr.map { |a| a.print(opts) }.join(', ')})" 
-    end
-  end
+  def clean?; !dirty? end
+  def dirty?; deep_any? { |s| s.dirty } end
+  def dirty_variables; deep_select { |s| s.dirty } end
 
   def method_missing(method, *args, &block)
-    if !args.empty? && args.all? { |a| valid_expr?(a) }
+    if args.all? { |a| valid_expr?(a) }
       if BINARY_OPS.include?(method)
         Sexpr.build([method, self, *args], env)
-      elsif UNARY_OPS.include?(method)
+      elsif UNARY_OPS.include?(method) || args.empty?
         Sexpr.build([method, self], env)
-      else
-        env.send(method, *args, &block)
       end
     else
      super
     end
   end
 
-private
+# printing
+  
+  def print; puts to_s end
 
-  # LISPY ;)
-
-  def eval(opts = {})
-    return(env[self.value] || self.value) if atomic?
-
-    args = sexpr.cdr
-    args = args.map { |a| a.send(:eval, opts) }
-    apply(args, opts)
+  def to_s
+    if atomic?
+      (Sexpr.symbolic ? (name || value) : value).inspect
+    elsif BINARY_OPS.include?(op)
+      "(#{@sexpr[1].to_s} #{sexpr[0]} #{sexpr[2].to_s})" 
+    elsif UNARY_OPS.include?(op)
+      "#{op}(#{@sexpr[1].to_s})" 
+    else
+      "#{op}(#{@sexpr.cdr.map { |a| a.to_s }.join(', ')})" 
+    end
   end
 
-  def apply(args, opts = {})
+  def to_ary
+    sexpr
+  end
+
+  def inspect
+    @sexpr.inspect
+  end
+
+protected
+
+  def deep_any?(&block)
+    raise "no block given" unless block_given?
+    
+    if atomic?
+      yield self
+    else
+      sexpr.cdr.any? { |s| s.deep_any?(&block) }
+    end
+  end
+
+  def deep_select(&block)
+    raise "no block given" unless block_given?
+
+    if atomic? && yield(self)
+      @name ? [@name] : ["anon"]
+    else
+      sexpr.cdr.inject([]) { |a, s| a << s.deep_select(&block)}.flatten
+    end
+  end
+
+
+private
+
+  # Wizard hats on ;)
+
+  def eval
+    atomic? ? value : apply
+  end
+
+  def apply
     result = \
-      if @env[op].respond_to? :call
-        @env[op].call(*args) 
+      if @env[op].respond_to?(:call)
+        @env[op].call(*arg_values) 
       elsif BINARY_OPS.include?(op)
-        args[0].send(op, args[1])
-      elsif UNARY_OPS.include?(op)
-        args.first.send(op)
+        arg_values[0].send(op, arg_values[1])
+      elsif UNARY_OPS.include?(op) || arg_values.size == 1
+        arg_values[0].send(op)
       end
 
-    puts " => #{op}(#{args.join(', ')}) = #{result}" if opts[:verbose]
+    puts " -> #{op}(#{arg_values.join(', ')}) = #{result}" if Sexpr.verbose
     result
+  end
+
+  def arg_values
+    @arg_values = (clean? && @arg_values) || args.map { |a| a.value }
   end
 
 end

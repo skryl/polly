@@ -1,6 +1,10 @@
 class Polly::Context < Hash
   include Polly::Common
 
+  def name(n)
+    @name = n
+  end
+
   def version(v)
     @version = v
   end
@@ -18,20 +22,15 @@ class Polly::Context < Hash
   alias_method :eq, :var
 
   def method_missing(method, *args, &block)
-    if !args.empty? && args.all? { |a| valid_expr?(a) }
+    if args.all? { |a| valid_expr?(a) }
       Sexpr.build([method, *args], self)
     else
      super
     end
   end
 
-  def print(opts = {})
-    vals = \
-      self.map do |(k,v)|
-        "#{k.inspect} => #{v.print(opts)}"
-      end.join("\n")
-    "{ #{vals} }"
-  end
+  def print; puts to_s end
+  def to_s; self.map { |(k,v)| "#{k.inspect} => #{v.to_s}" }.join("\n") end
 
 private
 
