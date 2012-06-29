@@ -1,33 +1,20 @@
 class Polly::Calculation
+  extend Forwardable
   include Polly::Common
 
   attr_reader :env
+  def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
+                 :defined_variables, :undefined_variables
+
+  meta_eval { attr_accessor :verbose, :symbolic}
 
   def initialize(&block)
-    @env = Context.new
-    Math.singleton_methods.each do |m|
-      @env[m.to_sym] = lambda { |*args| Math.send(m, *args) }
-    end
+    @env = Env.new
+    @context = Context.new(@env)
 
     if block_given?
-      @env.instance_eval &block
+      @context.instance_eval &block
     end
-  end
-
-  def clean_env
-    Context[@env.select { |name, expr| expr.is_a?(Sexpr) }]
-  end
-
-  def atomic_variables
-    @env.select { |name, expr| expr.is_a?(Sexpr) && expr.atomic? }
-  end
-
-  def defined_variables
-    @env.select { |name, expr| expr.is_a?(Sexpr) && expr.atomic? && expr.defined? }
-  end
-
-  def undefined_variables
-    @env.select { |name, expr| expr.is_a?(Sexpr) && expr.atomic? && !expr.defined? }
   end
 
   def method_missing(method, *args, &block)
@@ -40,9 +27,12 @@ class Polly::Calculation
     end
   end
 
-  def print; puts to_s end
-  def to_s; clean_env.to_s end
-  def inspect; env.inspect end
-  def pretty_inspect; env.pretty_inspect end
+  def verbose_toggle
+    Calculation.verbose = !Calculation.verbose
+  end
+
+  def symbolic_toggle
+    Calculation.symbolic = !Calculation.symbolic
+  end
 
 end

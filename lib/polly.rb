@@ -6,6 +6,7 @@ require 'polly/extensions/numeric'
 module Polly; end
 
 require 'polly/common'
+require 'polly/env'
 require 'polly/context'
 require 'polly/sexpr'
 require 'polly/math'

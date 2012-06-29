@@ -2,11 +2,10 @@ class Polly::Sexpr
   include Polly::Common
 
   # instance accessors
-  attr_reader :env, :name, :sexpr, :dirty
+  attr_reader :env, :name, :op, :args, :sexpr, :dirty
   protected :sexpr, :dirty
 
   # class accessors
-  meta_eval { attr_accessor :verbose, :symbolic}
   meta_eval { protected :new }
 
   def self.build(val, env, opts = {})
@@ -28,27 +27,21 @@ class Polly::Sexpr
   end
 
   def initialize(sexpr, env, opts = {})
+    @sexpr = sexpr
+    @op = sexpr[0]
+    @args = sexpr.cdr
     @name = opts[:name]
     @env = env
-    @sexpr = sexpr
   end
 
-  def op
-    @sexpr[0]
-  end
-
-  def args
-    @sexpr.cdr
+  def value
+    @dirty = false
+    atomic? ? @sexpr.first : (self.defined? && self.send(:eval) || nil)
   end
 
   def replace(val)
     @dirty = true
     @sexpr = self.class.build(val, self.env).sexpr
-  end
-
-  def value(cache = true)
-    @dirty = false
-    atomic? ? @sexpr.first : (self.defined? && self.send(:eval) || nil)
   end
 
   def atomic?
@@ -63,6 +56,12 @@ class Polly::Sexpr
   def dirty?; deep_any? { |s| s.dirty } end
   def dirty_variables; deep_select { |s| s.dirty } end
 
+  def clear_cache!
+    @dirty = true
+  end
+
+# magix
+
   def method_missing(method, *args, &block)
     if args.all? { |a| valid_expr?(a) }
       if BINARY_OPS.include?(method)
@@ -75,13 +74,15 @@ class Polly::Sexpr
     end
   end
 
-# printing
+# printing and conversion
   
   def print; puts to_s end
+  def inspect; @sexpr.inspect end
+  def to_ary; sexpr end
 
   def to_s
     if atomic?
-      (Sexpr.symbolic ? (name || value) : value).inspect
+      (Calculation.symbolic ? (name || value) : value).inspect
     elsif BINARY_OPS.include?(op)
       "(#{@sexpr[1].to_s} #{sexpr[0]} #{sexpr[2].to_s})" 
     elsif UNARY_OPS.include?(op)
@@ -91,21 +92,13 @@ class Polly::Sexpr
     end
   end
 
-  def to_ary
-    sexpr
-  end
-
-  def inspect
-    @sexpr.inspect
-  end
-
 protected
 
   def deep_any?(&block)
     raise "no block given" unless block_given?
     
-    if atomic?
-      yield self
+    if yield(self)
+      true
     else
       sexpr.cdr.any? { |s| s.deep_any?(&block) }
     end
@@ -114,13 +107,12 @@ protected
   def deep_select(&block)
     raise "no block given" unless block_given?
 
-    if atomic? && yield(self)
-      @name ? [@name] : ["anon"]
+    if yield(self)
+      @name ? [@name] : []
     else
       sexpr.cdr.inject([]) { |a, s| a << s.deep_select(&block)}.flatten
     end
   end
-
 
 private
 
@@ -140,10 +132,12 @@ private
         arg_values[0].send(op)
       end
 
-    puts " -> #{op}(#{arg_values.join(', ')}) = #{result}" if Sexpr.verbose
+    puts " -> #{op}(#{arg_values.join(', ')}) = #{result}" if Calculation.verbose
     result
   end
 
+  # use cached values unless some part of expression tree is dirty
+  #
   def arg_values
     @arg_values = (clean? && @arg_values) || args.map { |a| a.value }
   end
