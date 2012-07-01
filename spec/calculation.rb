@@ -40,5 +40,4 @@ describe Polly::Calculation do
     @calc.should respond_to(:undefined_variables)
   end
 
-
 end
