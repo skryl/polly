@@ -1,8 +1,4 @@
-class Object
-
-  def to_sexpr
-    Polly::Sexpr.build(self)
-  end
+class BasicObject
 
   # this shit is meta
   def metaclass; class << self; self; end; end
@@ -17,12 +13,13 @@ class Object
   def class_def( name, &blk )
     class_eval { define_method name, &blk }
   end
+
 end
 
-module Kernel
+class Object
 
-  def Sexpr(val)
-    Polly::Sexpr.build(val)
+  def to_sexpr
+    Polly::Sexpr.build(self)
   end
 
 end

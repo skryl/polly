@@ -1,5 +1,6 @@
-class Polly::Context
-  include Polly::Common
+class Polly::Context < BasicObject
+  include ::Polly::Common
+  include ::Kernel
 
   def initialize(env)
     @env = env
@@ -28,6 +29,10 @@ class Polly::Context
     var_reader name
   end
 
+  def Sexpr(val)
+    Polly::Sexpr.build(val)
+  end
+
   alias_method :const, :var
   alias_method :eq, :var
 
@@ -41,6 +46,10 @@ class Polly::Context
     else
      super
     end
+  end
+
+  def self.const_missing(name)
+    ::Object.const_get(name)
   end
 
 private
