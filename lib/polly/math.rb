@@ -1,10 +1,13 @@
 module Polly::Math
 
 class << self
-  # Method placed here should not clash with Hash::methods since Context inherits from Hash
 
-  def br(test, exp1, exp2)
-    test ? exp1 : exp2
+  def min(*args)
+    args.min
+  end
+
+  def max(*args)
+    args.max
   end
 
   def ceil(val, ceil)
@@ -15,32 +18,30 @@ class << self
      duration.times.inject { |sum, p| sum += pmt/(1 + (apr/12.0))**p }
   end
 
-  def minimum(*args)
-    args.min
-  end
-
   # Some binary operators are not methods but part of Ruby's syntax. Since
   # there is no way to latch on to them, they'll have to be redefined.
+  
+  def br(test, exp1, exp2)
+    test ? exp1 : exp2
+  end
 
   def and(val1, val2)
     val1 && val2
   end
-  alias_method :'&&', :and
 
   def or(val1, val2)
     val1 || val2
   end
-  alias_method :'||', :or
 
   def not(val)
     !val
   end
   alias_method :!, :not
 
-  def not_equal(val1, val2)
+  def not_eq(val1, val2)
     !(val1 == val2)
   end
-  alias_method :!=, :not_equal
+  alias_method :!=, :not_eq
 
 end
 

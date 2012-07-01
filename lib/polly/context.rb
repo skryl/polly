@@ -13,8 +13,18 @@ class Polly::Context
     @version = v
   end
 
+  def attribute(a)
+    ivar = "@#{a}"
+    instance_variable_defined?(ivar) && instance_variable_get(ivar)
+  end
+
   def var(name, val = nil, opts = {})
-    @env.set_var(name, val, opts)
+    if @env[name]  
+      @env[name].replace(val) 
+    else
+      @env[name] = Sexpr.build(val, name: name)
+    end
+
     var_reader name
   end
 
@@ -23,9 +33,11 @@ class Polly::Context
 
 # magix
 
+  # convert method calls on self to s-expressions
+  # 
   def method_missing(method, *args, &block)
     if args.all? { |a| valid_expr?(a) }
-      Sexpr.build([method, *args], @env)
+      Sexpr.build([method, *args])
     else
      super
     end

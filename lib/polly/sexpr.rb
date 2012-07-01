@@ -2,20 +2,20 @@ class Polly::Sexpr
   include Polly::Common
 
   # instance accessors
-  attr_reader :env, :name, :op, :args, :sexpr, :dirty
-  protected :sexpr, :dirty
+  attr_reader :name, :op, :args, :sexpr
+  protected :sexpr
 
   # class accessors
   meta_eval { protected :new }
 
-  def self.build(val, env, opts = {})
+  def self.build(val, opts = {})
     return val if val.is_a?(Sexpr)
 
     val = \
       case val
       when Array
         val.map!.with_index do |arg, i| 
-          (arg.is_a?(Sexpr) || i == 0) ? arg : Sexpr.build(arg, env)
+          (arg.is_a?(Sexpr) || i == 0) ? arg : Sexpr.build(arg)
         end
       when *ATOMIC_TYPES
         Array(val)
@@ -23,25 +23,24 @@ class Polly::Sexpr
         UNDEFINED
       end
 
-    Sexpr.new(val, env, opts)
+    Sexpr.new(val, opts)
   end
 
-  def initialize(sexpr, env, opts = {})
+  def initialize(sexpr, opts = {})
     @sexpr = sexpr
     @op = sexpr[0]
     @args = sexpr.cdr
     @name = opts[:name]
-    @env = env
   end
 
-  def value
+  def value(ctx = Env.new)
     @dirty = false
-    atomic? ? @sexpr.first : (self.defined? && self.send(:eval) || nil)
+    atomic? ? @sexpr.first : (self.defined? && self.send(:eval, ctx) || nil)
   end
 
   def replace(val)
     @dirty = true
-    @sexpr = self.class.build(val, self.env).sexpr
+    @sexpr = self.class.build(val).sexpr
   end
 
   def atomic?
@@ -50,25 +49,28 @@ class Polly::Sexpr
 
   def defined?; !undefined? end
   def undefined?; deep_any? { |s| s.sexpr == UNDEFINED } end
-  def undefined_variables; deep_select { |s| s.undefined? } end
+  def undefined_variables; deep_select { |s| s.atomic? && s.undefined? } end
 
   def clean?; !dirty? end
-  def dirty?; deep_any? { |s| s.dirty } end
-  def dirty_variables; deep_select { |s| s.dirty } end
+  def dirty?; deep_any? { |s| s.instance_variable_get("@dirty") } end
+  def dirty_variables; deep_select { |s| s.atomic? && s.dirty? } end
 
-  def clear_cache!
-    @dirty = true
+  def ==(val)
+    case val
+    when Sexpr, Array
+      sexpr == val
+    else
+      self.value == val
+    end
   end
 
 # magix
 
+  # convert any method call to an s-expression
+  #
   def method_missing(method, *args, &block)
     if args.all? { |a| valid_expr?(a) }
-      if BINARY_OPS.include?(method)
-        Sexpr.build([method, self, *args], env)
-      elsif UNARY_OPS.include?(method) || args.empty?
-        Sexpr.build([method, self], env)
-      end
+      Sexpr.build([method, self, *args])
     else
      super
     end
@@ -118,18 +120,16 @@ private
 
   # Wizard hats on ;)
 
-  def eval
-    atomic? ? value : apply
+  def eval(ctx)
+    atomic? ? value : apply(ctx)
   end
 
-  def apply
+  def apply(ctx)
     result = \
-      if @env[op].respond_to?(:call)
-        @env[op].call(*arg_values) 
-      elsif BINARY_OPS.include?(op)
-        arg_values[0].send(op, arg_values[1])
-      elsif UNARY_OPS.include?(op) || arg_values.size == 1
-        arg_values[0].send(op)
+      if ctx[op].respond_to?(:call)
+        ctx[op].call(*arg_values) 
+      else
+        arg_values[0].send(op, *arg_values.cdr)
       end
 
     puts " -> #{op}(#{arg_values.join(', ')}) = #{result}" if Calculation.verbose

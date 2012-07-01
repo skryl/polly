@@ -2,7 +2,7 @@ class Polly::Calculation
   extend Forwardable
   include Polly::Common
 
-  attr_reader :env
+  attr_reader :env, :context
   def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
                  :defined_variables, :undefined_variables
 
@@ -22,7 +22,7 @@ class Polly::Calculation
     method_name = $1.to_sym
     
     if @env.keys.include?(method_name)
-      method == method_name ?  @env[method_name] : @env.var(method_name, args[0])
+      method == method_name ?  @env[method_name] : @context.var(method_name, args[0])
     else super
     end
   end

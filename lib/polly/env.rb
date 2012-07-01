@@ -7,16 +7,8 @@ class Polly::Env < Hash
     end
   end
 
-  def set_var(name, val = nil, opts = {})
-    if self[name]  
-      self[name].replace(val) 
-    else
-      self[name] = Sexpr.build(val, self, name: name)
-    end
-  end
-
   def clean
-    Context[self.select { |name, expr| expr.is_a?(Sexpr) }]
+    Env[self.select { |name, expr| expr.is_a?(Sexpr) }]
   end
 
   def atomic_variables

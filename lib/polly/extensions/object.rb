@@ -1,5 +1,10 @@
 class Object
-  # The hidden singleton lurks behind everyone
+
+  def to_sexpr
+    Polly::Sexpr.build(self)
+  end
+
+  # this shit is meta
   def metaclass; class << self; self; end; end
   def meta_eval &blk; metaclass.instance_eval &blk; end
 
@@ -12,4 +17,12 @@ class Object
   def class_def( name, &blk )
     class_eval { define_method name, &blk }
   end
+end
+
+module Kernel
+
+  def Sexpr(val)
+    Polly::Sexpr.build(val)
+  end
+
 end

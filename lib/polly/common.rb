@@ -1,7 +1,7 @@
 module Polly::Common
   include Polly
 
-  BINARY_OPS = [:*, :/, :%, :+, :-, :<<, :>>, :&, :|, :^, :>, :>=, :<, :<=, :<=>, :==, :===, :=~ ]
+  BINARY_OPS = [:*, :/, :%, :+, :-, :**, :<<, :>>, :&, :|, :^, :>, :>=, :<, :<=, :<=>, :==, :===, :=~ ]
   UNARY_OPS = [:-, :+, :!, :~]
   UNDEFINED = [:nil]
 
@@ -10,7 +10,7 @@ module Polly::Common
 private
 
   def valid_expr?(expr)
-    (expr.is_a? Sexpr) || ATOMIC_TYPES.any? { |t| expr.is_a?(t) }
+    expr.is_a?(Sexpr) || valid_type?(expr)
   end
 
   def valid_type?(val)
