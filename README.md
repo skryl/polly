@@ -1,5 +1,3 @@
-# Polly
-
 ## About
 
 Polly is a DSL for defining and evaluating symbolic expressions. It allows you
