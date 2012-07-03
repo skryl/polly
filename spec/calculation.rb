@@ -14,13 +14,9 @@ describe Polly::Calculation do
 
   it 'should be able to toggle calculation options' do
     @calc.verbose_toggle
-    @calc.symbolic_toggle
     calc_class.verbose.should be_true
-    calc_class.symbolic.should be_true
     @calc.verbose_toggle
-    @calc.symbolic_toggle
     calc_class.verbose.should be_false
-    calc_class.symbolic.should be_false
   end
 
   it 'should eval the initialization block inside the context' do

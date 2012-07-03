@@ -21,11 +21,6 @@ describe Polly::Context do
     end
   end
 
-  it 'should have a name and version' do
-    @c.attribute(:name).should == :my_context
-    @c.attribute(:version).should == 1
-  end
-
   it 'should define aliases for specifying variables' do
     [:const, :var, :eq].all? { |m| @c.should respond_to(m) }
   end

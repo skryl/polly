@@ -6,7 +6,10 @@ class Polly::Calculation
   def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
                  :defined_variables, :undefined_variables
 
-  meta_eval { attr_accessor :verbose, :symbolic}
+  def_delegator :@env, :values, :result
+  def_delegator :@env, :values!, :result!
+
+  meta_eval { attr_accessor :verbose }
 
   def initialize(&block)
     @env = Env.new
@@ -26,13 +29,17 @@ class Polly::Calculation
     else super
     end
   end
-
+   
   def verbose_toggle
     Calculation.verbose = !Calculation.verbose
   end
 
-  def symbolic_toggle
-    Calculation.symbolic = !Calculation.symbolic
+  def marshal_dump
+
+  end
+
+  def marshal_load(env)
+
   end
 
 end

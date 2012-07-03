@@ -1,0 +1,2 @@
+- test caching correctness
+- marshalling calculations (hash of s-expressions)

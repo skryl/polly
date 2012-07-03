@@ -11,6 +11,14 @@ class Polly::Env < Hash
     Env[self.select { |name, expr| expr.is_a?(Sexpr) }]
   end
 
+  def values
+    clean.inject({}) { |h, (name, expr)| h[name] = expr.value; h }
+  end
+
+  def values!
+    clean.inject({}) { |h, (name, expr)| h[name] = expr.value!; h }
+  end
+
   def atomic_variables
     clean.select { |name, expr| expr.atomic? }
   end
@@ -25,7 +33,15 @@ class Polly::Env < Hash
 
 # printing  and conversion
 
-  def print; puts to_s end
-  def to_s; clean.map { |(k,v)| "#{k.inspect} => #{v.to_s}" }.join("\n") end
+  def print(opts = {}); puts to_s(opts) end
+  def to_s(opts = {}); clean.map { |(k,v)| "#{k.inspect} => #{v.to_s(opts)}" }.join("\n") end
+
+  # def marshal_dump
+  #   clean.inject({}) { |h, (name, expr)| h[name] = expr.to_ary(expand: false, symbolic: true); h }
+  # end
+
+  # def marshal_load(env)
+  #   env.each { |name, expr| self[name] = Sexpr.build(expr) }
+  # end
 
 end

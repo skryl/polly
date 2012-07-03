@@ -6,19 +6,6 @@ class Polly::Context < BasicObject
     @env = env
   end
 
-  def name(n)
-    @name = n
-  end
-
-  def version(v)
-    @version = v
-  end
-
-  def attribute(a)
-    ivar = "@#{a}"
-    instance_variable_defined?(ivar) && instance_variable_get(ivar)
-  end
-
   def var(name, val = nil, opts = {})
     if @env[name]  
       @env[name].replace(val) 
