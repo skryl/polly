@@ -15,13 +15,12 @@ class Polly::Sexpr
       when Sexpr
         val
       when Array
-        val.map!.with_index do |arg, i| 
-          (arg.is_a?(Sexpr) || i == 0) ? arg : Sexpr.build(arg, opts)
-        end
-      when *ATOMIC_TYPES
-        Array(val)
+        sexpr = val.cdr.map { |arg| arg.is_a?(Sexpr) ? arg : Sexpr.build(arg, opts) }
+        sexpr.unshift(val.first)
       when NilClass
         UNDEFINED
+      else
+        Array(val)
       end
 
     Sexpr.new(val, opts)
@@ -37,8 +36,9 @@ class Polly::Sexpr
   # use cached values unless some part of expression tree is dirty
   #
   def value(ctx = Env.new)
-    @value = (clean? && @value) || 
-      (atomic? ? @sexpr.first : (self.defined? && self.send(:eval, ctx) || nil))
+    @value = \
+      (clean? && @value) || 
+      (self.defined? ? (atomic? ? @sexpr.first : self.send(:eval, ctx)) : nil)
     @dirty = false
     @value
   end
@@ -56,16 +56,16 @@ class Polly::Sexpr
   end
 
   def atomic?
-    @sexpr.size == 1 && valid_type?(@sexpr.first)
+    @sexpr.size == 1
   end
 
   def defined?; !undefined? end
   def undefined?; any? { |s| s.sexpr == UNDEFINED } end
-  def undefined_variables; select { |s| s.atomic? && s.undefined? } end
+  def undefined_variables; select { |s| s.atomic? && s.undefined? && s.name }.map(&:name) end
 
   def clean?; !dirty? end
   def dirty?; any? { |s| s.instance_variable_get("@dirty") } end
-  def dirty_variables; select { |s| s.atomic? && s.dirty? } end
+  def dirty_variables; select { |s| s.atomic? && s.dirty? && s.name }.map(&:name) end
 
   def ==(val)
     case val
@@ -92,11 +92,7 @@ class Polly::Sexpr
   # convert any method call to an s-expression
   #
   def method_missing(method, *args, &block)
-    if args.all? { |a| valid_expr?(a) }
-      Sexpr.build([method, self, *args])
-    else
-     super
-    end
+    Sexpr.build([method, self, *args])
   end
 
 # printing and conversion
@@ -109,20 +105,28 @@ class Polly::Sexpr
 protected
 
   def _to_s(opts = {}, depth = 0)
-    if atomic? || (!opts[:expand] && depth > 0 && name)
-      (opts[:numeric] ? value : (name || value)).inspect
-    elsif BINARY_OPS.include?(op)
-      "(#{@sexpr[1]._to_s(opts,depth+1)} #{@sexpr[0]} #{@sexpr[2]._to_s(opts,depth+1)})" 
+    if atomic?
+      value.inspect
+    elsif name && (!opts[:expand] && depth > 0)
+      (opts[:numeric] ? value : name).inspect
     else
-      "#{op}(#{args.map { |a| a._to_s(opts,depth+1) }.join(', ')})" 
+      evaled_args = args.map { |a| (a.atomic? && a.name).inspect || a._to_s(opts,depth+1) }
+      if BINARY_OPS.include?(op)
+        "(#{evaled_args[0]} #{op} #{evaled_args[1]})" 
+      else
+        "#{op}(#{evaled_args.join(', ')})" 
+      end
     end
   end
 
   def _to_ary(opts = {}, depth = 0)
-    if atomic? || (!opts[:expand] && depth > 0 && name)
-      (opts[:numeric] ? value : (name || value))
+    if atomic?
+      Array(value)
+    elsif name && (!opts[:expand] && depth > 0)
+      Array(opts[:numeric] ? value : name)
     else
-      [op, args.map { |a| a._to_ary(opts,depth+1) }]
+      evaled_args = args.map { |a| Array(a.atomic? && a.name) || a._to_ary(opts,depth+1) }
+      evaled_args.unshift(op)
     end
   end
 
@@ -130,14 +134,14 @@ private
 
   # Wizard hats on ;)
 
-  def eval(ctx)
-    atomic? ? (ctx[value] || value) : apply(ctx)
+  def eval(env)
+    atomic? ? value : apply(env)
   end
 
-  def apply(ctx)
+  def apply(env)
     result = \
-      if ctx[op].respond_to?(:call)
-        ctx[op].call(*arg_values) 
+      if env[op].respond_to?(:call)
+        env[op].call(*arg_values) 
       else
         arg_values[0].send(op, *arg_values.cdr)
       end

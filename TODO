@@ -1,2 +1,4 @@
+- test universal types
+- test serialization
 - test caching correctness
 - marshalling calculations (hash of s-expressions)

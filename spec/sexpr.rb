@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Polly::Sexpr do
   
-  let(:env_class) { Polly::Env}
+  let(:env_class) { Polly::Env }
   let(:sexpr_class) { Polly::Sexpr }
 
   before :each do
@@ -47,7 +47,7 @@ describe Polly::Sexpr do
   end
 
   it 'should evaluate a valid s-expression' do
-    @s[0].should == :nil
+    @s[0].should == nil
     @s[1].should == 0
     @s[2].should == :a
     @s[3].should == 'a'

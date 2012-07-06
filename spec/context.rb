@@ -29,7 +29,7 @@ describe Polly::Context do
     [:d, :e, :f].all? { |m| @c.should_not respond_to(m) }
     [:a, :b, :c, :calc, :complex].all? { |m| @c.should respond_to(m) }
     [:a, :b, :c, :calc, :complex].all? { |m| @c.send(m).should be_a(sexpr_class) }
-    @c.a.should == :nil
+    @c.a.should == nil
     @c.b.should == 2
     @c.c.should == 3
     @c.calc.should == nil

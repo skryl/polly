@@ -25,7 +25,7 @@ describe Polly::Calculation do
         eq :eq2, br(h.length > 4, eq1.to_i, e)
         eq :eq3, max(ceil(npv(a.round(1), c, eq2), 50), e)
 
-        eq :result, 100.to_sexpr + Sexpr(1000) + eq3
+        eq :final, 100.to_sexpr + Sexpr(1000) + eq3
       end
 
     @calc.h = "str"
@@ -35,17 +35,17 @@ describe Polly::Calculation do
   end
 
   it 'should perform a complex calculation' do
-    @calc.result.should == 18500
+    @calc.final.should == 18500
   end
 
   it 'should perform a complex calculation' do
     @calc.h = "string"
-    @calc.result.should == 14600
+    @calc.final.should == 14600
   end
 
   it 'should perform a complex calculation' do
     @calc.e = 20000
-    @calc.result.should == 117300
+    @calc.final.should == 117300
   end
 
 end

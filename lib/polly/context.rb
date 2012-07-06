@@ -4,13 +4,18 @@ class Polly::Context < BasicObject
 
   def initialize(env)
     @env = env
+    @env.clean.each { |name, expr| var_reader name.to_sym }
+  end
+
+  def evaluate(proc)
+    instance_eval(&proc) if proc
   end
 
   def var(name, val = nil, opts = {})
     if @env[name]  
       @env[name].replace(val) 
     else
-      @env[name] = Sexpr.build(val, name: name)
+      @env[name] = Sexpr.build(val, name: name, env: @env)
     end
 
     var_reader name
@@ -28,11 +33,7 @@ class Polly::Context < BasicObject
   # convert method calls on self to s-expressions
   # 
   def method_missing(method, *args, &block)
-    if args.all? { |a| valid_expr?(a) }
-      Sexpr.build([method, *args])
-    else
-     super
-    end
+    Sexpr.build([method, *args])
   end
 
   def self.const_missing(name)
@@ -42,8 +43,7 @@ class Polly::Context < BasicObject
 private
 
   def var_reader(name)
-    instance_variable_set("@#{name}", @env[name])
-    meta_eval { attr_reader name }
+    define_singleton_method(name) { @env[name] }
   end
 
 end
