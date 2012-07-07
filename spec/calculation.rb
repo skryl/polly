@@ -30,10 +30,20 @@ describe Polly::Calculation do
     @calc.a.should == 2
   end
 
-  it 'should call delegated functions on on its environment' do
+  it 'should respond to delegated methods' do
     @calc.should respond_to(:atomic_variables)
     @calc.should respond_to(:defined_variables)
     @calc.should respond_to(:undefined_variables)
+    @calc.should respond_to(:evaluate)
+    @calc.should respond_to(:to_yaml)
+  end
+
+  it 'should initialize from a yaml dump' do
+    dump = { foo: 1, bar: 2 }.to_yaml
+    c = calc_class.from_yaml(dump)
+    c.context.should respond_to(:foo, :bar)
+    c.foo.should == 1
+    c.bar.should == 2
   end
 
 end

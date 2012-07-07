@@ -2,22 +2,19 @@ require 'spec_helper'
 
 describe Polly::Context do
 
-  let(:env_class) { Polly::Env}
-  let(:sexpr_class) { Polly::Sexpr}
+  let(:env_class) { Polly::Env }
+  let(:sexpr_class) { Polly::Sexpr }
   let(:context_class) { Polly::Context }
 
   before :each do
     @c = context_class.new(env_class.new)
     @c.instance_eval do
-      name :my_context
-      version 1
-
       var :a
       const :b, 2
       const :c, 3
 
       eq :calc, c * (a + b)
-      eq :complex, min(10, 15, max(1,2,3), a, b, c)
+      eq :complex, min(10, 15, max(10,20,30, a, b, c), calc)
     end
   end
 
@@ -50,6 +47,19 @@ describe Polly::Context do
   it 'should cast a literal to an s-expression' do
     @c.instance_eval { Sexpr(5) }.should be_a(sexpr_class)
     @c.instance_eval { 5.to_sexpr }.should be_a(sexpr_class)
+  end
+
+  it 'should evaluate a calculation block before or after initialization' do
+    p = Proc.new do
+      eq :another, min(complex, calc) ** 2
+    end
+    @c.evaluate(p)
+
+    [:a, :b, :c, :calc, :complex, :another].all? { |m| @c.should respond_to(m) }
+    [:a, :b, :c, :calc, :complex, :another].all? { |m| @c.send(m).should be_a(sexpr_class) }
+    @c.another.should == nil
+    @c.var(:a, 1)
+    @c.another.should == 81
   end
 
 end

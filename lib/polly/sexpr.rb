@@ -46,7 +46,7 @@ class Polly::Sexpr
   # force a recalc of all sub-expressions
   #
   def value!(ctx = Env.new) 
-    each_atomic { |a| a.instance_variable_set("@dirty", true) }
+    each { |a| a.instance_variable_set("@dirty", true) }
     value(ctx)
   end
 
@@ -83,10 +83,6 @@ class Polly::Sexpr
     args.each { |s| s.each(&block) }
   end
 
-  def each_atomic(&block)
-    select { |s| s.atomic? }
-  end
-
 # magix
 
   # convert any method call to an s-expression
@@ -105,29 +101,31 @@ class Polly::Sexpr
 protected
 
   def _to_s(opts = {}, depth = 0)
-    if atomic?
-      value.inspect
-    elsif name && (!opts[:expand] && depth > 0)
-      (opts[:numeric] ? value : name).inspect
-    else
-      evaled_args = args.map { |a| (a.atomic? && a.name).inspect || a._to_s(opts,depth+1) }
-      if BINARY_OPS.include?(op)
-        "(#{evaled_args[0]} #{op} #{evaled_args[1]})" 
+    evaled_args = args.map do |a| 
+      if a.atomic? || (!opts[:expand] && a.name)
+        (opts[:numeric] ? a.value : (a.name || a.value)).inspect
       else
-        "#{op}(#{evaled_args.join(', ')})" 
+        a._to_s(opts,depth+1)
       end
+    end
+
+    if BINARY_OPS.include?(op)
+      "(#{evaled_args[0]} #{op} #{evaled_args[1]})" 
+    else
+      "#{op}(#{evaled_args.join(', ')})" 
     end
   end
 
   def _to_ary(opts = {}, depth = 0)
-    if atomic?
-      Array(value)
-    elsif name && (!opts[:expand] && depth > 0)
-      Array(opts[:numeric] ? value : name)
-    else
-      evaled_args = args.map { |a| Array(a.atomic? && a.name) || a._to_ary(opts,depth+1) }
-      evaled_args.unshift(op)
+    evaled_args = args.map do |a| 
+      if a.atomic? || (!opts[:expand] && a.name)
+        Array(opts[:numeric] ? a.value : (a.name || a.value))
+      else
+        a._to_ary(opts,depth+1)
+      end
     end
+
+    evaled_args.unshift(op)
   end
 
 private

@@ -29,7 +29,7 @@ describe Polly::Sexpr do
   end
 
   it 'should determine the operation and arguments of any s-expression' do
-    @s[0].op.should == :nil 
+    @s[0].op.should == nil 
     @s[0].args.should be_empty
     @s[6].op.should == :+
     @s[6].args.should == [1,2]
@@ -97,6 +97,31 @@ describe Polly::Sexpr do
     @s[1].foo.should == [:foo, 0]
     @s[1].bar(1,2).should == [:bar, 0, 1, 2]
     @s[1].foo.bar(1,2).should == [:bar, [:foo, 0],  1, 2]
+  end
+
+  it 'should convert to an array' do
+    @s[6].to_ary.should == [:+, [1], [2]]
+    @s[7].to_ary.should == [:*, [:+, [1], [2]], [3]]
+  end
+
+  describe 'make sure caching internals are working' do
+
+    before :each do
+      @s[7].value
+    end
+
+    it 'should re-evaluate same s-expression using cache' do
+      @s[7].should_not_receive(:eval)
+      @s[7].value
+      @s[7].value
+    end
+
+    it 'should re-evaluate same s-expression and sub-expressions' do
+      @s[7].should_receive(:eval).twice
+      @s[7].value!
+      @s[7].value!
+    end
+
   end
 
 end

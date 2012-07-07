@@ -19,7 +19,9 @@ describe Polly::Calculation do
         var :f
         var :g
         var :h
+      end
 
+      @calc.evaluate do
         # eq can nest other equations or vars
         eq :eq1, (e * f + g) / 3.0 - f + -e
         eq :eq2, br(h.length > 4, eq1.to_i, e)
@@ -46,6 +48,28 @@ describe Polly::Calculation do
   it 'should perform a complex calculation' do
     @calc.e = 20000
     @calc.final.should == 117300
+  end
+
+  it 'should convert the calculation to an array' do
+    @calc.final.to_ary.should == \
+      [:+, [:+, [100], [1000]], [:eq3]]
+    @calc.final.to_ary(numeric: true).should == \
+      [:+, [:+, [100], [1000]], [17400]]
+    @calc.final.to_ary(expand: true).should == \
+      [:+, [:+, [100], [1000]], [:max, [:ceil, [:npv, [:round, [:a], [1]], [:c], [:br, [:>, [:length, [:h]], [4]], [:to_i, [:+, [:-, [:/, [:+, [:*, [:e], [:f]], [:g]], [3.0]], [:f]], [:-@, [:e]]]], [:e]]], [50]], [:e]]]
+    @calc.final.to_ary(numeric: true, expand: true).should == \
+      [:+, [:+, [100], [1000]], [:max, [:ceil, [:npv, [:round, [1.5], [1]], [12], [:br, [:>, [:length, ["str"]], [4]], [:to_i, [:+, [:-, [:/, [:+, [:*, [3000], [2]], [10000]], [3.0]], [2]], [:-@, [3000]]]], [3000]]], [50]], [3000]]]
+  end
+
+  it 'should convert the calculation to a human readable string' do
+    @calc.final.to_s.should == \
+      "((100 + 1000) + :eq3)"
+    @calc.final.to_s(numeric: true).should == \
+      "((100 + 1000) + 17400)"
+    @calc.final.to_s(expand: true).should == \
+      "((100 + 1000) + max(ceil(npv(round(:a, 1), :c, br((length(:h) > 4), to_i((((((:e * :f) + :g) / 3.0) - :f) + -@(:e))), :e)), 50), :e))"
+    @calc.final.to_s(numeric: true, expand: true).should == \
+      "((100 + 1000) + max(ceil(npv(round(1.5, 1), 12, br((length(\"str\") > 4), to_i((((((3000 * 2) + 10000) / 3.0) - 2) + -@(3000))), 3000)), 50), 3000))"
   end
 
 end

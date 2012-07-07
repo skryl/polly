@@ -37,6 +37,13 @@ class Polly::Env < Hash
 
   def print(opts = {}); puts to_s(opts) end
   def to_s(opts = {}); clean.map { |(k,v)| "#{k.inspect} => #{v.to_s(opts)}" }.join("\n") end
+  def to_yaml; dump.to_yaml end
+
+  def ==(env)
+    env.is_a?(Hash) ? Hash[self.clean] == Hash[env.clean] : false
+  end
+
+private
 
   def dump
     clean.inject({}) { |h, (name, expr)| h[name] = expr.to_ary; h }

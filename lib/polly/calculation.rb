@@ -4,7 +4,7 @@ class Polly::Calculation
 
   attr_reader :env, :context
   def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
-                 :defined_variables, :undefined_variables, :dump
+                 :defined_variables, :undefined_variables, :to_yaml
 
   def_delegator :@env, :values, :result
   def_delegator :@env, :values!, :result!
@@ -15,6 +15,10 @@ class Polly::Calculation
     @env = Env.new(env)
     @context = Context.new(@env)
     @context.evaluate(block)
+  end
+
+  def self.from_yaml(yml)
+    new(YAML::load(yml))
   end
 
   def evaluate(&block)

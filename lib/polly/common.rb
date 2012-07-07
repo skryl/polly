@@ -3,6 +3,6 @@ module Polly::Common
 
   BINARY_OPS = [:*, :/, :%, :+, :-, :**, :<<, :>>, :&, :|, :^, :>, :>=, :<, :<=, :<=>, :==, :===, :=~ ]
   UNARY_OPS = [:-, :+, :!, :~]
-  UNDEFINED = [:nil]
+  UNDEFINED = [nil]
 
 end
