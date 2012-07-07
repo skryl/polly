@@ -31,28 +31,29 @@ class Polly::Sexpr
     @op = @sexpr[0]
     @args = @sexpr.cdr
     @name = opts[:name]
+    @env = opts[:env] || Env.new
   end
 
   # use cached values unless some part of expression tree is dirty
   #
-  def value(ctx = Env.new)
+  def value(env = @env)
     @value = \
       (clean? && @value) || 
-      (self.defined? ? (atomic? ? @sexpr.first : self.send(:eval, ctx)) : nil)
+      (self.defined? ? (atomic? ? @sexpr.first : self.send(:eval)) : nil)
     @dirty = false
     @value
   end
 
   # force a recalc of all sub-expressions
   #
-  def value!(ctx = Env.new) 
+  def value!(env = @env) 
     each { |a| a.instance_variable_set("@dirty", true) }
-    value(ctx)
+    value(env)
   end
 
   def replace(val)
     @dirty = true
-    @sexpr = self.class.build(val).sexpr
+    @sexpr = self.class.build(val, env: @env).sexpr
   end
 
   def atomic?
@@ -88,7 +89,7 @@ class Polly::Sexpr
   # convert any method call to an s-expression
   #
   def method_missing(method, *args, &block)
-    Sexpr.build([method, self, *args])
+    Sexpr.build([method, self, *args], env: @env)
   end
 
 # printing and conversion
@@ -132,14 +133,14 @@ private
 
   # Wizard hats on ;)
 
-  def eval(env)
-    atomic? ? value : apply(env)
+  def eval
+    atomic? ? value : apply
   end
 
-  def apply(env)
+  def apply
     result = \
-      if env[op].respond_to?(:call)
-        env[op].call(*arg_values) 
+      if @env[op].respond_to?(:call)
+        @env[op].call(*arg_values) 
       else
         arg_values[0].send(op, *arg_values.cdr)
       end
