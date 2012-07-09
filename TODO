@@ -1,2 +1,3 @@
 - test universal types
 - prevent setting variables to custom types
+- injecting custom math functions
