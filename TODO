@@ -1,3 +1,6 @@
 - test universal types
 - prevent setting variables to custom types
 - injecting custom math functions
+- make env a required param to Sexpr::build()
+- test serialization for big calcs, direct var references
+- undefined_variables should be an array of primitives only!

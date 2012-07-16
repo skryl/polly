@@ -15,14 +15,14 @@ class Polly::Context < BasicObject
     if @env[name]  
       @env[name].replace(val) 
     else
-      @env[name] = Sexpr.build(val, name: name, env: @env)
+      @env[name] = Sexpr.build(val, @env, name)
     end
 
     var_reader name
   end
 
   def Sexpr(val)
-    Polly::Sexpr.build(val, env: @env)
+    Polly::Sexpr.build(val, @env)
   end
 
   alias_method :const, :var
@@ -33,7 +33,7 @@ class Polly::Context < BasicObject
   # convert method calls on self to s-expressions
   # 
   def method_missing(method, *args, &block)
-    Sexpr.build([method, *args], env: @env)
+    Sexpr.build([method, *args], @env)
   end
 
   def self.const_missing(name)

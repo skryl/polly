@@ -4,7 +4,7 @@ class Polly::Calculation
 
   attr_reader :env, :context
   def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
-                 :defined_variables, :undefined_variables, :to_yaml
+                 :input_variables, :defined_variables, :undefined_variables
 
   def_delegator :@env, :values, :result
   def_delegator :@env, :values!, :result!
@@ -17,12 +17,9 @@ class Polly::Calculation
     @context.evaluate(block)
   end
 
-  def self.from_yaml(yml)
-    new(YAML::load(yml))
-  end
-
-  def evaluate(&block)
-    @context.evaluate(block)
+  def evaluate(inputs = {}, &block)
+    inputs.each { |k,v| @context.var(k,v) }
+    @context.evaluate(block) if block
     self
   end
 
@@ -39,5 +36,11 @@ class Polly::Calculation
   def verbose_toggle
     Calculation.verbose = !Calculation.verbose
   end
+
+# Rails compatible serialization
+
+  def dump; env.to_yaml end
+  def self.load(yml); new(YAML::load(yml)) if yml end
+  def self.dump(obj); obj.dump if obj end
 
 end

@@ -43,6 +43,11 @@ class << self
   end
   alias_method :!=, :not_eq
 
+  # NOOP
+  def self(obj)
+    obj
+  end
+
 end
 
 end

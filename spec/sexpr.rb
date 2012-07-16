@@ -9,7 +9,7 @@ describe Polly::Sexpr do
     @env = env_class.new
 
     @s = []
-    @s[0] = sexpr_class.build(nil, name: 'a')
+    @s[0] = sexpr_class.build(nil, nil, 'a')
     @s[1] = sexpr_class.build(0)
     @s[2] = sexpr_class.build(:a)
     @s[3] = sexpr_class.build('a')

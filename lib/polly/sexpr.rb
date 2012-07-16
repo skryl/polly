@@ -3,35 +3,57 @@ class Polly::Sexpr
   include Enumerable
 
   # instance accessors
-  attr_reader :name, :op, :args, :sexpr
-  protected :sexpr
+  attr_reader :op, :args, :sexpr, :env
+  attr_accessor :name, :env, :dirty
+  protected :sexpr, :env=, :name=, :dirty=
 
   # class accessors
   meta_eval { protected :new }
 
-  def self.build(val, opts = {})
+  def self.build(val, env = nil, name = nil)
     val = \
       case val
-      when Sexpr
+      when Sexpr 
         val
+      when Symbol 
+        env_val = env && env[val]
+        env_val.is_a?(Sexpr) ? env_val : Array(val)
       when Array
-        sexpr = val.cdr.map { |arg| arg.is_a?(Sexpr) ? arg : Sexpr.build(arg, opts) }
-        sexpr.unshift(val.first)
+        if val.size > 1
+          val.cdr.map do |arg| 
+            arg.is_a?(Sexpr) ? arg : Sexpr.build(arg, env, name) 
+          end.unshift(val.car)
+        else
+          Sexpr.build(val.first, env, name)
+        end
       when NilClass
         UNDEFINED
-      else
-        Array(val)
+      else Array(val)
       end
 
-    Sexpr.new(val, opts)
+    val.is_a?(Sexpr) ? Sexpr.update(val, env, name) : Sexpr.new(val, env, name)
   end
 
-  def initialize(sexpr, opts = {})
-    @sexpr = (sexpr.is_a?(Sexpr) ? sexpr.sexpr : sexpr)
+  # If an sexpr directly references another named sexpr then the named sexpr
+  # should be wrapped in a self call, which is a noop, in order to avoid
+  # having two references to the same sexpr.
+  #
+  def self.update(sexpr, env, name)
+    if name && sexpr.name && name != sexpr.name
+      Sexpr.build([:self, sexpr])
+    else
+      sexpr.send(:name=, name) unless sexpr.name
+      sexpr.send(:env=, env) unless sexpr.env
+      sexpr
+    end
+  end
+
+  def initialize(sexpr, env, name)
+    @sexpr = sexpr
     @op = @sexpr[0]
     @args = @sexpr.cdr
-    @name = opts[:name]
-    @env = opts[:env] || Env.new
+    @name = name
+    @env = env || Env.new
   end
 
   # use cached values unless some part of expression tree is dirty
@@ -47,13 +69,13 @@ class Polly::Sexpr
   # force a recalc of all sub-expressions
   #
   def value!(env = @env) 
-    each { |a| a.instance_variable_set("@dirty", true) }
+    each { |a| a.dirty = true }
     value(env)
   end
 
   def replace(val)
     @dirty = true
-    @sexpr = self.class.build(val, env: @env).sexpr
+    @sexpr = self.class.build(val, @env).sexpr
   end
 
   def atomic?
@@ -65,15 +87,15 @@ class Polly::Sexpr
   def undefined_variables; select { |s| s.atomic? && s.undefined? && s.name }.map(&:name) end
 
   def clean?; !dirty? end
-  def dirty?; any? { |s| s.instance_variable_get("@dirty") } end
+  def dirty?; any? { |s| s.dirty } end
   def dirty_variables; select { |s| s.atomic? && s.dirty? && s.name }.map(&:name) end
 
   def ==(val)
     case val
     when Sexpr, Array
-      @sexpr == val
+      val == @sexpr
     else
-      self.value == val
+      val == self.value
     end
   end
 
@@ -89,44 +111,42 @@ class Polly::Sexpr
   # convert any method call to an s-expression
   #
   def method_missing(method, *args, &block)
-    Sexpr.build([method, self, *args], env: @env)
+    Sexpr.build([method, self, *args], @env)
   end
 
 # printing and conversion
   
   def print(opts = {}); puts to_s(opts) end
   def inspect(opts = {}); @sexpr.inspect end
-  def to_s(opts = {}); _to_s(opts) end
+  def to_s(opts = {}); print(_to_ary(opts)) end
   def to_ary(opts = {}); _to_ary(opts) end
 
 protected
 
-  def _to_s(opts = {}, depth = 0)
-    evaled_args = args.map do |a| 
-      if a.atomic? || (!opts[:expand] && a.name)
-        (opts[:numeric] ? a.value : (a.name || a.value)).inspect
-      else
-        a._to_s(opts,depth+1)
-      end
-    end
-
-    if BINARY_OPS.include?(op)
-      "(#{evaled_args[0]} #{op} #{evaled_args[1]})" 
+  def _to_ary(opts = {})
+    if atomic?
+      Array(value)
     else
-      "#{op}(#{evaled_args.join(', ')})" 
+      args.map do |a| 
+        if a.atomic? || (!opts[:expand] && a.name)
+          Array(opts[:numeric] ? a.value : (a.name || a.value))
+        else 
+          a._to_ary(opts)
+        end
+      end.unshift(op)
     end
   end
 
-  def _to_ary(opts = {}, depth = 0)
-    evaled_args = args.map do |a| 
-      if a.atomic? || (!opts[:expand] && a.name)
-        Array(opts[:numeric] ? a.value : (a.name || a.value))
-      else
-        a._to_ary(opts,depth+1)
-      end
-    end
+  def print(sexpr)
+    op, args = sexpr.car, sexpr.cdr
 
-    evaled_args.unshift(op)
+    if args.empty?
+      op.inspect
+    elsif BINARY_OPS.include?(op)
+      "(#{print(args[0])} #{op} #{print(args[1])})" 
+    else
+      "#{op}(#{args.map {|a| print(a)}.join(', ')})" 
+    end
   end
 
 private

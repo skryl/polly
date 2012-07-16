@@ -9,6 +9,7 @@ describe Polly::Calculation do
       var :a, 1
       var :b, 2
       var :c, 3
+      var :d, a + b + c
     end
   end
 
@@ -20,8 +21,8 @@ describe Polly::Calculation do
   end
 
   it 'should eval the initialization block inside the context' do
-    @calc.context.should_not respond_to(:d, :e, :f)
-    @calc.context.should respond_to(:a, :b, :c)
+    @calc.context.should_not respond_to(:e, :f, :g)
+    @calc.context.should respond_to(:a, :b, :c, :d)
   end
 
   it 'should get and set variables in the context' do
@@ -39,11 +40,13 @@ describe Polly::Calculation do
   end
 
   it 'should initialize from a yaml dump' do
-    dump = { foo: 1, bar: 2 }.to_yaml
-    c = calc_class.from_yaml(dump)
-    c.context.should respond_to(:foo, :bar)
-    c.foo.should == 1
-    c.bar.should == 2
+    dump = calc_class.dump(@calc)
+    c = calc_class.load(dump)
+    c.context.should respond_to(:a, :b, :c, :d)
+    c.a.should == 1
+    c.b.should == 2
+    c.c.should == 3
+    c.d.should == 6
   end
 
 end
