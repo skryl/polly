@@ -4,7 +4,7 @@ class Polly::Calculation
 
   attr_reader :env, :context
   def_delegators :@env, :print, :to_s, :inspect, :pretty_inspect, :atomic_variables,
-                 :input_variables, :defined_variables, :undefined_variables
+                 :defined_variables, :undefined_variables
 
   def_delegator :@env, :values, :result
   def_delegator :@env, :values!, :result!
