@@ -1,14 +1,15 @@
 ## About
 
-Polly is a DSL for defining and evaluating symbolic expressions. It allows you
-to build a parse tree for a complex computation using familiar Ruby syntax. It
-can then 
+Polly is a DSL for manipulating and evaluating symbolic expressions.
 
-* analyze, simplify, or evaluate the full expression or any of it's constituent parts
-* run arbitrary code as a source of inputs to the expression
-* run callbacks when any inputs or intermediate values change in the expression
+## Features
 
-It is basically glorified calculator with a few hooks ;)
+* Create calculations consisting of one or more s-expressions 
+* Evaluate full s-expressions or any constituent parts
+* Add custom function primitives for complex calculations
+* Print s-expression parse trees in prefix or infix notation
+* Perform data dependence analysis
+* Analyze runtime performance 
 
 ## Installation
 
