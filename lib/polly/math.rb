@@ -15,7 +15,7 @@ class << self
   end
 
   def pv(i, length, pmt)
-     pmt / i * (1 - (1 + i) ** -length)
+     pmt.to_f / i * (1 - (1 + i) ** -length.to_f)
   end
 
   # Some binary operators are not methods but part of Ruby's syntax. Since
