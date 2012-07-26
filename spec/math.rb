@@ -30,17 +30,17 @@ describe Polly::Math do
     end
 
     it 'should perform a net present value function' do
-      math_class.npv(0.100, 12, 50).round(3).should == 523.465
-      math_class.npv(0.100, 12, 75).round(3).should == 785.197
-      math_class.npv(0.100, 12, 100).round(3).should == 1046.93
+      math_class.pv(0.100, 12, 50).round(2).should == 340.68
+      math_class.pv(0.100, 12, 75).round(2).should == 511.03
+      math_class.pv(0.100, 12, 100).round(2).should == 681.37
 
-      math_class.npv(0.150, 1, 100).round(3).should == 0
-      math_class.npv(0.150, 6, 100).round(3).should == 481.784
-      math_class.npv(0.150, 12, 100).round(3).should == 1021.780
+      math_class.pv(0.150, 1, 100).round(2).should == 86.96
+      math_class.pv(0.150, 6, 100).round(2).should == 378.45
+      math_class.pv(0.150, 12, 100).round(2).should == 542.06
 
-      math_class.npv(0.200, 12, 100).round(3).should == 997.503
-      math_class.npv(0.300, 12, 100).round(3).should == 951.421
-      math_class.npv(0.400, 12, 100).round(3).should == 908.411
+      math_class.pv(0.200, 12, 100).round(2).should == 443.92
+      math_class.pv(0.300, 12, 100).round(2).should == 319.03
+      math_class.pv(0.400, 12, 100).round(2).should == 245.59
     end
 
   end

@@ -14,8 +14,8 @@ class << self
     (val.to_f / ceil.to_i).to_i * ceil.to_i 
   end
 
-  def npv(apr, duration, pmt)
-     duration.times.inject { |sum, p| sum += pmt/(1 + (apr/12.0))**p }
+  def pv(i, length, pmt)
+     pmt / i * (1 - (1 + i) ** -length)
   end
 
   # Some binary operators are not methods but part of Ruby's syntax. Since
