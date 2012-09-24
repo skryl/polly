@@ -7,8 +7,8 @@ require 'polly/version'
 Gem::Specification.new do |gem|
   gem.authors       = ["Alex Skryl"]
   gem.email         = ["rut216@gmail.com"]
-  gem.description   = %q{ A DSL for manipulating and evaluating symbolic expressions }
-  gem.summary       = %q{ A symbolic expression DSL }
+  gem.description   = %q{ A DSL for manipulating and evaluating functional symbolic expressions }
+  gem.summary       = %q{ A DSL for working with functional symbolic expressions }
   gem.homepage      = "https://github.com/skryl/polly"
 
   gem.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
